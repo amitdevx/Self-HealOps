@@ -1,0 +1,18 @@
+# Environments
+.env
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Project Documentation & Phase details
+PRD.md
+TRD.md
+workflow.md
+BACKEND_AND_TOOLS.md
+implementation.md
+implementation.txt
+phase/

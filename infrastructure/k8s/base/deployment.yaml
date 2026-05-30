@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selfhealops-api
+  labels:
+    app: selfhealops-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: selfhealops-api
+  template:
+    metadata:
+      labels:
+        app: selfhealops-api
+    spec:
+      containers:
+      - name: api
+        image: selfhealops/api:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: selfhealops-config
+        - secretRef:
+            name: selfhealops-secrets
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selfhealops-worker
+  labels:
+    app: selfhealops-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: selfhealops-worker
+  template:
+    metadata:
+      labels:
+        app: selfhealops-worker
+    spec:
+      containers:
+      - name: celery-worker
+        image: selfhealops/worker:latest
+        command: ["celery", "-A", "backend.worker.celery_app", "worker", "--loglevel=info"]
+        envFrom:
+        - configMapRef:
+            name: selfhealops-config
+        - secretRef:
+            name: selfhealops-secrets
