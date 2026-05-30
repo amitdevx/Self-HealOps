@@ -41,9 +41,17 @@ class ExecutionService:
         return False
         
     def _execute_add_dependency(self, payload: dict) -> bool:
-        # In a real environment, this might edit a package.json or requirements.txt and push.
-        logger.info(f"Adding dependency {payload}")
-        return True
+        dependency = payload.get("dependency")
+        if not dependency:
+            return False
+        try:
+            with open("requirements.txt", "a") as f:
+                f.write(f"\n{dependency}\n")
+            logger.info(f"Added dependency {dependency} to requirements.txt")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to add dependency: {e}")
+            return False
         
     def _execute_create_pr(self, payload: dict) -> bool:
         from backend.services.github import github_service

@@ -49,6 +49,20 @@ async def learn_node(state: IncidentState):
     res = await agent_system.extract_learning(state["evidence"])
     return {"learning_result": res, "status": "RESOLVED"}
 
+async def escalate_node(state: IncidentState):
+    import logging
+    logger = logging.getLogger("workflow")
+    logger.critical(f"ESCALATION TRIGGERED for incident {state.get('incident_id', 'unknown')}")
+    # Integration with PagerDuty or Slack would go here
+    return {"status": "ESCALATED"}
+
+async def retry_node(state: IncidentState):
+    import logging
+    logger = logging.getLogger("workflow")
+    new_count = state.get("retry_count", 0) + 1
+    logger.warning(f"Retrying remediation for incident {state.get('incident_id', 'unknown')}. Attempt {new_count}")
+    return {"retry_count": new_count, "status": "RETRYING"}
+
 def safety_edge(state: IncidentState):
     if state["safety_validation"] and state["safety_validation"].is_safe:
         return "execute"
@@ -76,9 +90,8 @@ workflow.add_node("safety", safety_node)
 workflow.add_node("execute", execute_node)
 workflow.add_node("validate", validate_node)
 workflow.add_node("learn", learn_node)
-# escalations and retries can be external or dummy nodes
-workflow.add_node("escalate", lambda s: {"status": "ESCALATED"})
-workflow.add_node("retry", lambda s: {"retry_count": s["retry_count"] + 1, "status": "RETRYING"})
+workflow.add_node("escalate", escalate_node)
+workflow.add_node("retry", retry_node)
 
 workflow.set_entry_point("check_learning")
 workflow.add_conditional_edges("check_learning", check_learning_edge, {"safety": "safety", "classify": "classify"})

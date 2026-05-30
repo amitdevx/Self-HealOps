@@ -43,9 +43,16 @@ class AgentSystem:
 
     async def validate_resolution(self, incident_id: str) -> ValidationResult:
         from backend.services.github import github_service
-        # In a real scenario, this queries the latest GitHub Actions workflow run for the incident's PR.
-        # If the CI passed, it is resolved.
-        return ValidationResult(is_resolved=True, details="CI passed after remediation")
+        try:
+            repo = github_service.get_repo("amitdevx/Self-HealOps")
+            runs = repo.get_workflow_runs()
+            if runs.totalCount > 0:
+                latest_run = runs[0]
+                is_resolved = (latest_run.conclusion == "success")
+                return ValidationResult(is_resolved=is_resolved, details=f"CI conclusion: {latest_run.conclusion}")
+            return ValidationResult(is_resolved=False, details="No workflow runs found")
+        except Exception as e:
+            return ValidationResult(is_resolved=False, details=str(e))
 
     async def extract_learning(self, incident_data: str) -> LearningResult:
         prompt = f"Extract a reusable learning pattern and unique signature from the following incident and resolution data:\n{incident_data}"
