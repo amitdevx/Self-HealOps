@@ -37,7 +37,12 @@ def process_incident(incident_id: str, evidence: str):
     }
 
     loop = asyncio.get_event_loop()
-    final_state = loop.run_until_complete(workflow_app.ainvoke(initial_state))
+    final_state = loop.run_until_complete(
+        workflow_app.ainvoke(
+            initial_state, 
+            config={"configurable": {"thread_id": incident_id}}
+        )
+    )
     
     logger.info(f"Finished processing incident: {incident_id}. Final status: {final_state.get('status')}")
     return final_state.get("status")
