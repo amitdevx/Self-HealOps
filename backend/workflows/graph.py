@@ -3,6 +3,21 @@ from backend.workflows.state import IncidentState
 from backend.agents.core import agent_system
 import json
 
+async def check_learning_node(state: IncidentState):
+    from backend.services.learning import learning_service
+    match = await learning_service.find_match(state["evidence"].strip())
+    if match:
+        from backend.agents.schemas import RemediationPlanResult, RootCauseResult
+        import json
+        rc_res = RootCauseResult(primary_root_cause=match.root_cause, contributing_factors=[])
+        plan_res = RemediationPlanResult(actions=[])
+        try:
+            plan_res = RemediationPlanResult(actions=json.loads(match.resolution))
+        except:
+            pass
+        return {"root_cause": rc_res, "remediation_plan": plan_res}
+    return {}
+
 async def classify_node(state: IncidentState):
     res = await agent_system.classify_failure(state["evidence"])
     return {"classification": res}
@@ -46,8 +61,14 @@ def validation_edge(state: IncidentState):
         return "retry"
     return "escalate"
 
+def check_learning_edge(state: IncidentState):
+    if state.get("remediation_plan") and state["remediation_plan"].actions:
+        return "safety"
+    return "classify"
+
 workflow = StateGraph(IncidentState)
 
+workflow.add_node("check_learning", check_learning_node)
 workflow.add_node("classify", classify_node)
 workflow.add_node("rca", rca_node)
 workflow.add_node("plan", plan_node)
@@ -59,7 +80,8 @@ workflow.add_node("learn", learn_node)
 workflow.add_node("escalate", lambda s: {"status": "ESCALATED"})
 workflow.add_node("retry", lambda s: {"retry_count": s["retry_count"] + 1, "status": "RETRYING"})
 
-workflow.set_entry_point("classify")
+workflow.set_entry_point("check_learning")
+workflow.add_conditional_edges("check_learning", check_learning_edge, {"safety": "safety", "classify": "classify"})
 workflow.add_edge("classify", "rca")
 workflow.add_edge("rca", "plan")
 workflow.add_edge("plan", "safety")

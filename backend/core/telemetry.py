@@ -19,3 +19,12 @@ def setup_telemetry(app):
     
     # Instrument the FastAPI app
     FastAPIInstrumentor.instrument_app(app)
+
+    # Setup Metrics
+    from opentelemetry import metrics
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.exporter.prometheus import PrometheusMetricReader
+    
+    reader = PrometheusMetricReader()
+    meter_provider = MeterProvider(metric_readers=[reader])
+    metrics.set_meter_provider(meter_provider)

@@ -1,5 +1,6 @@
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from fastapi.middleware.cors import CORSMiddleware
 from backend.core.config import settings
 from backend.core.logging import setup_logging
@@ -36,6 +37,10 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         return {"status": "ok", "environment": settings.ENVIRONMENT}
+
+    @app.get("/metrics")
+    async def metrics():
+        return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
     return app
 
