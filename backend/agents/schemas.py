@@ -9,8 +9,12 @@ class RootCauseResult(BaseModel):
     confidence: float = Field(description="Confidence score between 0.0 and 100.0")
     recommended_remediation: str = Field(description="High-level suggested fix")
 
+class ActionModel(BaseModel):
+    action_type: str = Field(description="One of: ADD_DEPENDENCY, RESTART_POD, etc.")
+    payload: dict = Field(description="Action specific arguments (e.g., {'dependency': 'requests'})")
+
 class RemediationPlanResult(BaseModel):
-    actions: list[dict] = Field(description="List of structured actions to take. Must contain 'action' and 'target' keys.")
+    actions: list[ActionModel] = Field(description="List of structured actions to execute.")
 
 class SafetyValidationResult(BaseModel):
     is_safe: bool = Field(description="True if the plan is completely safe to execute autonomously")

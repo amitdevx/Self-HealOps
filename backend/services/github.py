@@ -24,6 +24,21 @@ class GitHubService:
         commits = repo.get_commits(sha=branch)
         return [{"sha": c.sha, "message": c.commit.message} for c in commits[:limit]]
 
+    def update_file_content(self, repo_name: str, file_path: str, content: str, commit_message: str, branch: str):
+        repo = self.get_repo(repo_name)
+        try:
+            repo.get_branch(branch)
+        except Exception:
+            self.create_branch(repo_name, "main", branch)
+            
+        try:
+            contents = repo.get_contents(file_path, ref=branch)
+            if type(contents) is list:
+                contents = contents[0]
+            repo.update_file(contents.path, commit_message, content, contents.sha, branch=branch)
+        except Exception:
+            repo.create_file(file_path, commit_message, content, branch=branch)
+
     def create_branch(self, repo_name: str, base_branch: str, new_branch: str):
         repo = self.get_repo(repo_name)
         base_ref = repo.get_git_ref(f"heads/{base_branch}")

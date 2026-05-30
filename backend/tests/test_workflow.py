@@ -20,30 +20,20 @@ async def test_workflow_execution():
     )
 
     with patch("backend.workflows.graph.agent_system") as mock_agent:
-        class DummyRC:
-            primary_root_cause = "missing dependency"
+        from backend.agents.schemas import ActionModel, RootCauseResult, RemediationPlanResult, SafetyValidationResult, ValidationResult
         
-        class DummyPlan:
-            actions = [{"action_type": "ADD_DEPENDENCY", "payload": {"dependency": "requests"}}]
-            
-        class DummySafety:
-            is_safe = True
-            
-        class DummyValidation:
-            is_resolved = True
-            
-        mock_agent.classify_failure = AsyncMock(return_value="code_issue")
-        mock_agent.analyze_root_cause = AsyncMock(return_value=DummyRC())
-        mock_agent.plan_remediation = AsyncMock(return_value=DummyPlan())
-        mock_agent.validate_safety = AsyncMock(return_value=DummySafety())
+        mock_agent.classify_failure = AsyncMock(return_value={"failure_category": "code_issue"})
+        mock_agent.analyze_root_cause = AsyncMock(return_value=RootCauseResult(primary_root_cause="missing dependency", contributing_factors=[], confidence=99.0, recommended_remediation="fix"))
+        mock_agent.plan_remediation = AsyncMock(return_value=RemediationPlanResult(actions=[ActionModel(action_type="ADD_DEPENDENCY", payload={"dependency": "requests"})]))
+        mock_agent.validate_safety = AsyncMock(return_value=SafetyValidationResult(is_safe=True, reason="ok"))
         mock_agent.execute_plan = AsyncMock(return_value=None)
-        mock_agent.validate_resolution = AsyncMock(return_value=DummyValidation())
+        mock_agent.validate_resolution = AsyncMock(return_value=ValidationResult(is_resolved=True, details="ok"))
         mock_agent.extract_learning = AsyncMock(return_value=None)
         
         with patch("backend.services.learning.learning_service.find_match", new_callable=AsyncMock) as mock_find_match:
             mock_find_match.return_value = None
             
-            final_state = await app.ainvoke(initial_state)
+            final_state = await app.ainvoke(initial_state, config={"configurable": {"thread_id": "1"}})
             
             assert final_state["status"] == "RESOLVED"
             mock_agent.classify_failure.assert_called_once()

@@ -13,7 +13,9 @@ class AgentSystem:
         return await nim_service.generate_structured_output(prompt, ClassificationResult)
 
     async def analyze_root_cause(self, context: str) -> RootCauseResult:
-        prompt = ROOT_CAUSE_PROMPT.format(context=context)
+        error_lines = [line for line in context.split("\n") if "ERROR" in line.upper() or "FATAL" in line.upper() or "EXCEPTION" in line.upper()]
+        truncated = "\n".join(error_lines)[-5000:] if error_lines else context[-5000:]
+        prompt = ROOT_CAUSE_PROMPT.format(context=truncated)
         return await nim_service.generate_structured_output(prompt, RootCauseResult)
 
     async def plan_remediation(self, root_cause: str) -> RemediationPlanResult:
@@ -24,13 +26,13 @@ class AgentSystem:
         prompt = SAFETY_PROMPT.format(plan=plan)
         return await nim_service.generate_structured_output(prompt, SafetyValidationResult)
 
-    async def execute_plan(self, actions: list[dict]) -> ExecutionResult:
+    async def execute_plan(self, actions: list) -> ExecutionResult:
         from backend.services.execution_service import execution_service
         success = True
         logs = []
         for action in actions:
-            action_type = action.get("action_type")
-            payload = action.get("payload", {})
+            action_type = action.action_type
+            payload = action.payload
             try:
                 res = execution_service.execute_action(action_type, payload)
                 logs.append(f"Action {action_type} executed: {res}")

@@ -42,12 +42,24 @@ class ExecutionService:
         
     def _execute_add_dependency(self, payload: dict) -> bool:
         dependency = payload.get("dependency")
+        repo_name = payload.get("repository", "amitdevx/Self-HealOps")
+        branch = payload.get("branch", "selfhealops-fix")
         if not dependency:
             return False
+        from backend.services.github import github_service
         try:
+            # Append locally so local processes pass tests if needed
             with open("requirements.txt", "a") as f:
                 f.write(f"\n{dependency}\n")
-            logger.info(f"Added dependency {dependency} to requirements.txt")
+            
+            # Read and push securely
+            with open("requirements.txt", "r") as f:
+                content = f.read()
+                
+            github_service.update_file_content(
+                repo_name, "requirements.txt", content, f"Add {dependency}", branch
+            )
+            logger.info(f"Added dependency {dependency} to requirements.txt (remotely)")
             return True
         except Exception as e:
             logger.error(f"Failed to add dependency: {e}")
@@ -57,7 +69,7 @@ class ExecutionService:
         from backend.services.github import github_service
         try:
             github_service.create_pull_request(
-                repo_name=payload.get("repository", ""),
+                repo_name=payload.get("repository", "amitdevx/Self-HealOps"),
                 title=payload.get("title", "Automated Remediation"),
                 body=payload.get("body", "SelfHealOps automated fix"),
                 head_branch=payload.get("branch", "selfhealops-fix")

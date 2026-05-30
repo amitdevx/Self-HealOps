@@ -1,4 +1,5 @@
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
 from backend.workflows.state import IncidentState
 from backend.agents.core import agent_system
 import json
@@ -7,12 +8,18 @@ async def check_learning_node(state: IncidentState):
     from backend.services.learning import learning_service
     match = await learning_service.find_match(state["evidence"].strip())
     if match:
-        from backend.agents.schemas import RemediationPlanResult, RootCauseResult
+        from backend.agents.schemas import RemediationPlanResult, RootCauseResult, ActionModel
         import json
-        rc_res = RootCauseResult(primary_root_cause=match.root_cause, contributing_factors=[])
+        rc_res = RootCauseResult(
+            primary_root_cause=match.root_cause, 
+            contributing_factors=[], 
+            confidence=100.0, 
+            recommended_remediation="Apply known deduplicated pattern"
+        )
         plan_res = RemediationPlanResult(actions=[])
         try:
-            plan_res = RemediationPlanResult(actions=json.loads(match.resolution))
+            parsed_actions = json.loads(match.resolution)
+            plan_res = RemediationPlanResult(actions=[ActionModel(**a) for a in parsed_actions])
         except:
             pass
         return {"root_cause": rc_res, "remediation_plan": plan_res}
@@ -32,7 +39,7 @@ async def plan_node(state: IncidentState):
     return {"remediation_plan": res}
 
 async def safety_node(state: IncidentState):
-    plan_str = json.dumps([a for a in state["remediation_plan"].actions]) if state["remediation_plan"] else ""
+    plan_str = json.dumps([a.model_dump() for a in state["remediation_plan"].actions]) if state["remediation_plan"] else ""
     res = await agent_system.validate_safety(plan_str)
     return {"safety_validation": res}
 
@@ -107,4 +114,5 @@ workflow.add_edge("retry", "plan")
 workflow.add_edge("learn", END)
 workflow.add_edge("escalate", END)
 
-app = workflow.compile()
+memory = MemorySaver()
+app = workflow.compile(checkpointer=memory)

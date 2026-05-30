@@ -11,13 +11,14 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 class NIMService:
-    def __init__(self, model: str = "meta/llama3-70b-instruct"):
+    def __init__(self, model: str = None):
         self.api_key = settings.NVIDIA_API_KEY
+        actual_model = model or settings.NIM_MODEL
         if not self.api_key:
             logger.warning("NVIDIA_API_KEY is not set. NIMService might fail.")
         
         self.llm = ChatNVIDIA(
-            model=model, 
+            model=actual_model, 
             nvidia_api_key=self.api_key,
             temperature=0.1,
             max_retries=3,
