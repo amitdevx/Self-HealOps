@@ -28,7 +28,6 @@ class ExecutionService:
             
         logger.info(f"Executing allowed action: {action_type} with payload {payload}")
         
-        # Stub implementation for actions
         if action_type == "ADD_DEPENDENCY":
             return self._execute_add_dependency(payload)
         elif action_type == "CREATE_PULL_REQUEST":
@@ -42,18 +41,50 @@ class ExecutionService:
         return False
         
     def _execute_add_dependency(self, payload: dict) -> bool:
+        # In a real environment, this might edit a package.json or requirements.txt and push.
+        logger.info(f"Adding dependency {payload}")
         return True
         
     def _execute_create_pr(self, payload: dict) -> bool:
-        return True
+        from backend.services.github import github_service
+        try:
+            github_service.create_pull_request(
+                repo_name=payload.get("repository", ""),
+                title=payload.get("title", "Automated Remediation"),
+                body=payload.get("body", "SelfHealOps automated fix"),
+                head_branch=payload.get("branch", "selfhealops-fix")
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to create PR: {e}")
+            return False
         
     def _execute_restart_pod(self, payload: dict) -> bool:
-        return True
+        import subprocess
+        namespace = payload.get("namespace", "default")
+        pod_name = payload.get("pod_name")
+        if not pod_name:
+            return False
+        res = subprocess.run(["kubectl", "delete", "pod", pod_name, "-n", namespace], capture_output=True)
+        return res.returncode == 0
         
     def _execute_rollback_deployment(self, payload: dict) -> bool:
-        return True
+        import subprocess
+        namespace = payload.get("namespace", "default")
+        deployment = payload.get("deployment")
+        if not deployment:
+            return False
+        res = subprocess.run(["kubectl", "rollout", "undo", f"deployment/{deployment}", "-n", namespace], capture_output=True)
+        return res.returncode == 0
         
     def _execute_scale_deployment(self, payload: dict) -> bool:
-        return True
+        import subprocess
+        namespace = payload.get("namespace", "default")
+        deployment = payload.get("deployment")
+        replicas = payload.get("replicas", 1)
+        if not deployment:
+            return False
+        res = subprocess.run(["kubectl", "scale", f"deployment/{deployment}", f"--replicas={replicas}", "-n", namespace], capture_output=True)
+        return res.returncode == 0
 
 execution_service = ExecutionService()

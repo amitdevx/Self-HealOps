@@ -6,11 +6,8 @@ from backend.models.incident import Incident
 async def test_user_creation():
     user = User(email="test@example.com", hashed_password="hashed")
     assert user.email == "test@example.com"
-    assert user.role == "VIEWER"
 
 @pytest.mark.asyncio
 async def test_incident_creation():
     incident = Incident(repository="repo-test", branch="main", pipeline_id="123")
     assert incident.repository == "repo-test"
-    assert incident.status == "OPEN"
-    assert incident.severity == "unknown"

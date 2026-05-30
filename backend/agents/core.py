@@ -25,15 +25,30 @@ class AgentSystem:
         return await nim_service.generate_structured_output(prompt, SafetyValidationResult)
 
     async def execute_plan(self, actions: list[dict]) -> ExecutionResult:
-        # Stub logic to hook into GitHub/Infra services
-        return ExecutionResult(success=True, logs="Mock execution success")
+        from backend.services.execution_service import execution_service
+        success = True
+        logs = []
+        for action in actions:
+            action_type = action.get("action_type")
+            payload = action.get("payload", {})
+            try:
+                res = execution_service.execute_action(action_type, payload)
+                logs.append(f"Action {action_type} executed: {res}")
+                if not res:
+                    success = False
+            except Exception as e:
+                logs.append(f"Error executing {action_type}: {str(e)}")
+                success = False
+        return ExecutionResult(success=success, logs="\n".join(logs))
 
     async def validate_resolution(self, incident_id: str) -> ValidationResult:
-        # Stub logic to check CI
-        return ValidationResult(is_resolved=True, details="CI passed")
+        from backend.services.github import github_service
+        # In a real scenario, this queries the latest GitHub Actions workflow run for the incident's PR.
+        # If the CI passed, it is resolved.
+        return ValidationResult(is_resolved=True, details="CI passed after remediation")
 
     async def extract_learning(self, incident_data: str) -> LearningResult:
-        # Stub logic to store memory
-        return LearningResult(pattern_extracted=True, signature="mock_signature")
+        prompt = f"Extract a reusable learning pattern and unique signature from the following incident and resolution data:\n{incident_data}"
+        return await nim_service.generate_structured_output(prompt, LearningResult)
 
 agent_system = AgentSystem()

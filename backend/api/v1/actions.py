@@ -28,5 +28,9 @@ async def execute_action(
     action = await action_repo.get(db, action_id)
     if not action:
         raise HTTPException(status_code=404, detail="Action not found")
-    # Stub for Phase 8 execution logic
-    return await action_repo.update(db, db_obj=action, obj_in={"status": "EXECUTED"})
+    from backend.services.execution_service import execution_service
+    res = execution_service.execute_action(action.action_type, action.payload)
+    if res:
+        return await action_repo.update(db, db_obj=action, obj_in={"status": "EXECUTED"})
+    else:
+        raise HTTPException(status_code=500, detail="Action execution failed")

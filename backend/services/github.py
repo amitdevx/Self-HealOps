@@ -13,8 +13,11 @@ class GitHubService:
 
     def get_workflow_logs(self, repo_name: str, run_id: int) -> str:
         repo = self.get_repo(repo_name)
-        # Mocking downloading logs as PyGithub requires downloading a zip and extracting
-        return f"Mock logs for workflow run {run_id} showing module not found error."
+        try:
+            run = repo.get_workflow_run(run_id)
+            return run.logs_url
+        except Exception as e:
+            return f"Failed to fetch logs for run {run_id}: {str(e)}"
 
     def get_recent_commits(self, repo_name: str, branch: str = "main", limit: int = 10):
         repo = self.get_repo(repo_name)

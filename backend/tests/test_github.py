@@ -9,8 +9,12 @@ def test_github_service_mocked():
     service.client.get_repo.return_value = mock_repo
     
     # Test logs
-    logs = service.get_workflow_logs("repo", 1)
-    assert "Mock logs" in logs
+    mock_run = MagicMock()
+    mock_run.logs_url = "https://github.com/logs/1.zip"
+    mock_repo.get_workflow_run.return_value = mock_run
+
+    logs = service.get_workflow_logs("test/repo", 1)
+    assert "github.com/logs" in logs
 
     # Test PR
     mock_pr = MagicMock()
