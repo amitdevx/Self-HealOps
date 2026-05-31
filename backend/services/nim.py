@@ -5,10 +5,13 @@ from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_excep
 from typing import TypeVar, Type
 import logging
 import httpx
+from aiolimiter import AsyncLimiter
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
+
+limiter = AsyncLimiter(35, 60)
 
 class NIMService:
     def __init__(self, model: str = None):
@@ -27,8 +30,8 @@ class NIMService:
 
     # Retry logic, timeout handling, and rate limiting (via backoff)
     @retry(
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=30),
+        stop=stop_after_attempt(5),
         retry=retry_if_exception_type((httpx.HTTPError, ValueError))
     )
     async def generate_structured_output(self, prompt: str, schema: Type[T]) -> T:
@@ -36,12 +39,13 @@ class NIMService:
         Never trust raw model output. This function forces structured generation
         and validates it natively against the passed Pydantic schema.
         """
-        structured_llm = self.llm.with_structured_output(schema)
-        try:
-            result = await structured_llm.ainvoke(prompt)
-            return result
-        except Exception as e:
-            logger.error(f"Failed to parse structured output from NIM: {e}")
-            raise ValueError(f"AI response did not match schema: {e}")
+        async with limiter:
+            structured_llm = self.llm.with_structured_output(schema)
+            try:
+                result = await structured_llm.ainvoke(prompt)
+                return result
+            except Exception as e:
+                logger.error(f"Failed to parse structured output from NIM: {e}")
+                raise ValueError(f"AI response did not match schema: {e}")
 
 nim_service = NIMService()

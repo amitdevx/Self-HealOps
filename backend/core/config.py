@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # GitHub
     GITHUB_TOKEN: Optional[str] = None
     GITHUB_WEBHOOK_SECRET: Optional[str] = None
+    GITHUB_REPO: str = ""
 
     # AI
     NVIDIA_API_KEY: Optional[str] = None

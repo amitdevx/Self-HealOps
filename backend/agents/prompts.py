@@ -34,3 +34,12 @@ If the plan contains blocked actions, it is UNSAFE.
 Plan:
 {plan}
 """
+
+BATCH_PROMPT = """
+You are the Batch Analysis Agent.
+Analyze the following batch of incidents simultaneously to save inference calls.
+For each incident, provide the classification, root cause analysis, and remediation plan.
+
+Incidents:
+{incidents}
+"""

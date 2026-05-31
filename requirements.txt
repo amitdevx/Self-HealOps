@@ -27,3 +27,6 @@ python-jose[cryptography]>=3.3.0
 bcrypt<4.0.0
 prometheus-client>=0.20.0
 opentelemetry-exporter-prometheus>=0.45b0
+
+missing_dependency_name
+aiolimiter==1.1.0

@@ -1,10 +1,11 @@
 from backend.services.nim import nim_service
 from backend.agents.schemas import (
     ClassificationResult, RootCauseResult, RemediationPlanResult, 
-    SafetyValidationResult, ExecutionResult, ValidationResult, LearningResult
+    SafetyValidationResult, ExecutionResult, ValidationResult, LearningResult,
+    BatchAnalysisResult
 )
 from backend.agents.prompts import (
-    CLASSIFICATION_PROMPT, ROOT_CAUSE_PROMPT, REMEDIATION_PROMPT, SAFETY_PROMPT
+    CLASSIFICATION_PROMPT, ROOT_CAUSE_PROMPT, REMEDIATION_PROMPT, SAFETY_PROMPT, BATCH_PROMPT
 )
 
 class AgentSystem:
@@ -45,8 +46,9 @@ class AgentSystem:
 
     async def validate_resolution(self, incident_id: str) -> ValidationResult:
         from backend.services.github import github_service
+        from backend.core.config import settings
         try:
-            repo = github_service.get_repo("amitdevx/Self-HealOps")
+            repo = github_service.get_repo(settings.GITHUB_REPO)
             runs = repo.get_workflow_runs()
             if runs.totalCount > 0:
                 latest_run = runs[0]
@@ -60,4 +62,9 @@ class AgentSystem:
         prompt = f"Extract a reusable learning pattern and unique signature from the following incident and resolution data:\n{incident_data}"
         return await nim_service.generate_structured_output(prompt, LearningResult)
 
+    async def batch_analyze(self, incidents: str) -> BatchAnalysisResult:
+        prompt = BATCH_PROMPT.format(incidents=incidents)
+        return await nim_service.generate_structured_output(prompt, BatchAnalysisResult)
+
 agent_system = AgentSystem()
+

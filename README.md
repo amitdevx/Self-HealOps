@@ -52,7 +52,7 @@ graph TD
 | **Core Logic** | Python 3.12+ | Type-hinted, asynchronous FastAPI backend. |
 | **LLM Provider** | NVIDIA NIM | High-performance inference endpoints powering Langchain workflows. |
 | **Orchestration** | LangGraph | State management and cyclical workflow engine. |
-| **Database** | PostgreSQL | Asynchronous SQLAlchemy ORM for relational tracking. |
+| **Database** | SQLite (Default) / PostgreSQL | Asynchronous SQLAlchemy ORM for relational tracking. |
 | **Caching & Vectors**| Redis | Caching and Semantic Vector Search (Langchain). |
 | **Observability** | Prometheus & Grafana | Real-time metrics and latency monitoring. |
 | **Integrations** | PyGithub & K8s Client | External execution vectors for pipeline healing. |
@@ -84,41 +84,36 @@ The system splits the cognitive and operational load across specialized worker a
 
 ### Prerequisites
 - Python 3.12+
-- Docker and Docker Compose
-- PostgreSQL 15+
-- Redis 7+
+- Docker and Docker Compose (Optional, for Redis/PostgreSQL)
 
-### 1. Environment Configuration
-Create a `.env` file in the root directory:
+### 1. Interactive Setup Wizard (New!)
+The fastest way to get SelfHealOps running locally is using the automated setup script. This script will automatically create a Python virtual environment, install dependencies, configure your environment variables securely, and initialize the SQLite database for you.
 
-```ini
-PROJECT_NAME="SelfHealOps API"
-API_V1_STR="/api/v1"
-DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5432/selfhealops"
-REDIS_HOST="localhost"
-REDIS_PORT="6379"
-SECRET_KEY="your-secure-random-secret-key-here"
-ACCESS_TOKEN_EXPIRE_MINUTES="30"
-GITHUB_TOKEN="your-github-personal-access-token"
-GITHUB_WEBHOOK_SECRET="your-github-webhook-secret"
-NVIDIA_API_KEY="your-nvidia-nim-api-key"
+Run the wizard from the root directory:
+```bash
+chmod +x setup.sh
+./setup.sh
 ```
 
-### 2. Startup Procedures
-Start the infrastructure:
-```bash
-docker-compose up -d
-```
+During setup, you will be prompted for:
+- NVIDIA API Key
+- GitHub Personal Access Token
+- GitHub Repository (e.g. your-username/your-repo)
+- Webhook Secret (auto-generated if left blank)
 
-Setup the Python environment and database:
+### 2. Start the Application
+
+If you created a virtual environment in step 1, make sure it is activated:
 ```bash
-python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-alembic upgrade head
 ```
 
-Run the application:
+*(Optional) Start Redis for task caching:*
+```bash
+docker-compose up -d redis
+```
+
+Start the FastAPI server:
 ```bash
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```

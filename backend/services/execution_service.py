@@ -1,4 +1,5 @@
 import logging
+from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +42,8 @@ class ExecutionService:
         return False
         
     def _execute_add_dependency(self, payload: dict) -> bool:
-        dependency = payload.get("dependency")
-        repo_name = payload.get("repository", "amitdevx/Self-HealOps")
+        dependency = payload.get("dependency") or payload.get("dependency_name")
+        repo_name = payload.get("repository", settings.GITHUB_REPO)
         branch = payload.get("branch", "selfhealops-fix")
         if not dependency:
             return False
@@ -69,7 +70,7 @@ class ExecutionService:
         from backend.services.github import github_service
         try:
             github_service.create_pull_request(
-                repo_name=payload.get("repository", "amitdevx/Self-HealOps"),
+                repo_name=payload.get("repository", settings.GITHUB_REPO),
                 title=payload.get("title", "Automated Remediation"),
                 body=payload.get("body", "SelfHealOps automated fix"),
                 head_branch=payload.get("branch", "selfhealops-fix")

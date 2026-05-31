@@ -21,7 +21,7 @@ if config.config_file_name is not None:
 import os
 import sys
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
-from backend.models.base import Base
+from backend.models import Base
 import backend.models # load all models
 from backend.core.config import settings
 
