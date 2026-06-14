@@ -11,8 +11,6 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
-limiter = AsyncLimiter(35, 60)
-
 class NIMService:
     def __init__(self, model: str = None):
         self.api_key = settings.NVIDIA_API_KEY
@@ -21,12 +19,17 @@ class NIMService:
             logger.warning("NVIDIA_API_KEY is not set. NIMService might fail.")
         
         self.llm = ChatNVIDIA(
-            model=actual_model, 
+            model=actual_model,
             nvidia_api_key=self.api_key,
             temperature=0.1,
-            max_retries=3,
-            timeout=30.0 # Timeout handling
         )
+        self._limiter = None
+
+    @property
+    def limiter(self):
+        if self._limiter is None:
+            self._limiter = AsyncLimiter(35, 60)
+        return self._limiter
 
     # Retry logic, timeout handling, and rate limiting (via backoff)
     @retry(
@@ -39,7 +42,7 @@ class NIMService:
         Never trust raw model output. This function forces structured generation
         and validates it natively against the passed Pydantic schema.
         """
-        async with limiter:
+        async with self.limiter:
             structured_llm = self.llm.with_structured_output(schema)
             try:
                 result = await structured_llm.ainvoke(prompt)

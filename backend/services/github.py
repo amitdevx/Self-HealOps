@@ -1,10 +1,14 @@
-from github import Github
+from github import Github, Auth
 from github.Repository import Repository
 from backend.core.config import settings
 
 class GitHubService:
     def __init__(self):
-        self.client = Github(settings.GITHUB_TOKEN) if settings.GITHUB_TOKEN else None
+        if settings.GITHUB_TOKEN:
+            auth = Auth.Token(settings.GITHUB_TOKEN)
+            self.client = Github(auth=auth)
+        else:
+            self.client = None
 
     def get_repo(self, repo_name: str) -> Repository:
         if not self.client:

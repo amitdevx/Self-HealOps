@@ -24,7 +24,7 @@ async def check_learning_node(state: IncidentState):
         try:
             parsed_actions = json.loads(match.resolution)
             plan_res = RemediationPlanResult(actions=[ActionModel(**a) for a in parsed_actions])
-        except:
+        except (json.JSONDecodeError, KeyError, TypeError):
             pass
         return {"root_cause": rc_res, "remediation_plan": plan_res}
     return {}

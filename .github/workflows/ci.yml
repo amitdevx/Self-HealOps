@@ -12,6 +12,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    env:
+      GITHUB_TOKEN: "dummy_github_token"
+      NVIDIA_API_KEY: "dummy_nvidia_key"
+      SECRET_KEY: "dummy_secret_for_tests_only"
+      GITHUB_WEBHOOK_SECRET: "dummy_webhook_secret"
+      DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+      CELERY_BROKER_URL: "redis://localhost:6379/0"
+      CELERY_RESULT_BACKEND: "redis://localhost:6379/1"
+      ENVIRONMENT: "test"
+
     steps:
       - name: Checkout codebase
         uses: actions/checkout@v4
@@ -29,4 +39,4 @@ jobs:
           
       - name: Run Pytest
         run: |
-          pytest
+          PYTHONPATH=. python -m pytest backend/tests/ -v --tb=short

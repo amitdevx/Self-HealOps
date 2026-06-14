@@ -36,10 +36,9 @@ def process_incident(incident_id: str, evidence: str):
         "status": "OPEN"
     }
 
-    loop = asyncio.get_event_loop()
-    final_state = loop.run_until_complete(
+    final_state = asyncio.run(
         workflow_app.ainvoke(
-            initial_state, 
+            initial_state,
             config={"configurable": {"thread_id": incident_id}}
         )
     )
