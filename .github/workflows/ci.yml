@@ -1,17 +1,31 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main", "develop" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "main", "develop" ]
 
 jobs:
   test:
+    name: Test ${{ matrix.test_module }}
     runs-on: ubuntu-latest
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        test_module: 
+          - test_agents.py
+          - test_api.py
+          - test_database.py
+          - test_execution_service.py
+          - test_github.py
+          - test_nim.py
+          - test_security.py
+          - test_workflow.py
+
+    # We provide dummy environment variables for the test suite. 
+    # Since our tests mock out real API calls and use an in-memory SQLite database, 
+    # no actual secrets are required.
     env:
       GITHUB_TOKEN: "dummy_github_token"
       NVIDIA_API_KEY: "dummy_nvidia_key"
@@ -23,20 +37,20 @@ jobs:
       ENVIRONMENT: "test"
 
     steps:
-      - name: Checkout codebase
-        uses: actions/checkout@v4
-        
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          
-      - name: Run Pytest
-        run: |
-          PYTHONPATH=. python -m pytest backend/tests/ -v --tb=short
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run ${{ matrix.test_module }}
+      run: |
+        PYTHONPATH=. python -m pytest backend/tests/${{ matrix.test_module }} -v --tb=short
